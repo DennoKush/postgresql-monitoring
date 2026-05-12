@@ -1,0 +1,15 @@
+## PgBouncer userlist.txt example
+## Copy to /etc/pgbouncer/userlist.txt
+## Each line: "<username>" "<password_or_md5_hash>"
+##
+## Plain text passwords are acceptable on secured servers.
+## MD5 format: "md5" + md5(password + username) — no spaces
+##
+## To generate an md5 hash:
+##   echo -n "md5$(echo -n 'PASSWORDUSERNAME' | md5sum | awk '{print $1}')"
+##
+## Example for user "appuser" with password "secret":
+##   echo -n "md5$(echo -n 'secretappuser' | md5sum | awk '{print $1}')"
+
+"appuser" "CHANGE_ME_OR_USE_MD5_HASH"
+"pgb_exporter" "CHANGE_ME_OR_USE_MD5_HASH"

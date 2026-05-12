@@ -1,0 +1,33 @@
+[Unit]
+Description=Prometheus PostgreSQL Exporter
+Documentation=https://github.com/prometheus-community/postgres_exporter
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=postgres_exporter
+Group=postgres_exporter
+
+# Load connection string and other env vars from the secure environment file
+EnvironmentFile=/etc/postgres_exporter/.env
+
+ExecStart=/usr/local/bin/postgres_exporter \
+  --web.listen-address=0.0.0.0:9187 \
+  --web.telemetry-path=/metrics \
+  --log.level=info
+
+# Restart on failure with a 5-second delay
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target

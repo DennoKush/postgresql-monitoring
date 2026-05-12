@@ -1,0 +1,502 @@
+You are a DevOps Engineer, PostgreSQL DBA, Monitoring Engineer, and Technical Documentation Architect.
+
+I want you to generate a complete implementation guide based on the attached architecture flow diagram.
+
+Architecture summary:
+- There is a PostgreSQL 17 host running on Ubuntu 24.04 LTS.
+- PostgreSQL is already installed and running.
+- The PostgreSQL host should expose:
+  - postgres_exporter on port 9187
+  - pgbouncer_exporter on port 9127
+- There is a separate Observability Server running:
+  - Prometheus
+  - Grafana
+  - Dashboards
+  - Alerts
+  - Microsoft Teams notifications
+- Prometheus scrapes postgres_exporter and pgbouncer_exporter.
+- Grafana uses Prometheus as the datasource.
+- Grafana dashboards and alerts are used to monitor the required database signals.
+- Alerts should be sent to Microsoft Teams.
+
+Assume a clean environment:
+- Ubuntu Server 24.04 LTS
+- PostgreSQL 17 is already installed and running
+- No monitoring tools are installed yet
+- Docker may be used where appropriate, but clearly explain whether the setup is Docker-based or systemd-based
+- Prefer production-friendly, open-source tools
+- Use clear directory structures
+- Use secure PostgreSQL users and least privilege where possible
+- Use environment files instead of hardcoding secrets
+- Include validation commands after every major step
+- Include troubleshooting sections
+
+Main monitoring goals:
+1. Database Connection Count
+2. Connection Pool Exhaustion
+
+Important instruction:
+Handle each monitoring goal separately, with its own folder and individual README.
+
+Expected output structure:
+
+monitoring-postgres-observability/
+├── README.md
+├── docs/
+│   ├── architecture.md
+│   ├── prerequisites.md
+│   ├── ports-and-networking.md
+│   └── security-notes.md
+├── setup/
+│   ├── postgres-exporter/
+│   │   ├── README.md
+│   │   ├── .env.example
+│   │   ├── postgres-exporter.service
+│   │   └── validation.md
+│   ├── pgbouncer/
+│   │   ├── README.md
+│   │   ├── pgbouncer.ini.example
+│   │   ├── userlist.txt.example
+│   │   └── validation.md
+│   ├── pgbouncer-exporter/
+│   │   ├── README.md
+│   │   ├── .env.example
+│   │   ├── pgbouncer-exporter.service
+│   │   └── validation.md
+│   ├── prometheus/
+│   │   ├── README.md
+│   │   ├── prometheus.yml
+│   │   ├── rules/
+│   │   │   ├── postgres-connection-count.yml
+│   │   │   └── pgbouncer-pool-exhaustion.yml
+│   │   └── validation.md
+│   ├── grafana/
+│   │   ├── README.md
+│   │   ├── datasource-prometheus.yml
+│   │   ├── dashboards/
+│   │   │   ├── postgres-connection-count.json
+│   │   │   └── pgbouncer-pool-exhaustion.json
+│   │   └── alerting/
+│   │       ├── contact-point-teams.md
+│   │       └── notification-policy.md
+│   └── teams/
+│       ├── README.md
+│       └── webhook-setup.md
+├── monitoring-goals/
+│   ├── database-connection-count/
+│   │   ├── README.md
+│   │   ├── metrics.md
+│   │   ├── prometheus-queries.md
+│   │   ├── grafana-dashboard.md
+│   │   ├── alert-rules.md
+│   │   ├── validation.md
+│   │   └── troubleshooting.md
+│   └── connection-pool-exhaustion/
+│       ├── README.md
+│       ├── metrics.md
+│       ├── prometheus-queries.md
+│       ├── grafana-dashboard.md
+│       ├── alert-rules.md
+│       ├── validation.md
+│       └── troubleshooting.md
+└── runbooks/
+    ├── database-connection-count-runbook.md
+    └── connection-pool-exhaustion-runbook.md
+
+Implementation requirements:
+
+1. Root README.md
+
+Generate a high-level README explaining:
+- What this monitoring stack does
+- How the architecture works
+- The relationship between PostgreSQL, PgBouncer, exporters, Prometheus, Grafana, and Teams
+- The role of postgres_exporter
+- The role of pgbouncer_exporter
+- What each monitoring goal covers
+- Recommended deployment order
+- Required ports
+- Assumptions
+- Security considerations
+
+2. Architecture documentation
+
+Create docs/architecture.md explaining the flow:
+
+PostgreSQL / PgBouncer → exporters → Prometheus scrape → Grafana dashboards and alerts → Microsoft Teams notifications.
+
+Explain that:
+- postgres_exporter exposes PostgreSQL internal metrics.
+- pgbouncer_exporter exposes PgBouncer pool and connection metrics.
+- Prometheus pulls metrics from exporters.
+- Grafana visualizes metrics and evaluates alerts.
+- Microsoft Teams receives alert notifications from Grafana.
+
+3. Installation and configuration steps
+
+Provide step-by-step installation instructions for:
+- postgres_exporter
+- PgBouncer
+- pgbouncer_exporter
+- Prometheus
+- Grafana
+- Microsoft Teams notification integration
+
+Each tool must have:
+- Installation steps
+- Configuration steps
+- systemd service file where applicable
+- Environment file example where secrets are needed
+- Firewall/port validation
+- Health-check commands
+- Logs inspection commands
+- Common troubleshooting issues
+
+4. PostgreSQL configuration
+
+Include PostgreSQL 17 configuration changes needed for:
+- Monitoring user creation
+- postgres_exporter access
+- PgBouncer access
+- max_connections visibility
+- pg_hba.conf considerations
+- Secure exporter access
+
+Include SQL commands such as:
+- CREATE USER
+- GRANT pg_monitor
+- SHOW config validations
+- SELECT queries for validating active connections
+- SELECT queries for validating max_connections
+
+Include examples for validating:
+- PostgreSQL is accepting connections
+- The monitoring user can connect
+- postgres_exporter can query required metrics
+- PgBouncer can connect to PostgreSQL
+
+5. Monitoring goal: Database Connection Count
+
+Create a full standalone README under:
+
+monitoring-goals/database-connection-count/README.md
+
+This README should explain:
+- What database connection count means
+- Why it matters
+- How active, idle, and waiting connections affect PostgreSQL
+- Which metrics are used
+- Whether the signal comes from postgres_exporter, PostgreSQL views, or Prometheus
+- How to validate it manually using SQL
+- How to validate it in Prometheus
+- How to visualize it in Grafana
+- Suggested warning and critical alert thresholds
+- Example PromQL queries
+- Example Grafana panels
+- Example alert rules
+- Troubleshooting steps
+
+Include SQL examples using:
+- pg_stat_activity
+- count by state
+- count by database
+- count by user
+- max_connections comparison
+- connection usage percentage
+
+Include SQL examples similar to:
+
+SELECT state, count(*)
+FROM pg_stat_activity
+GROUP BY state
+ORDER BY count(*) DESC;
+
+SELECT datname, count(*)
+FROM pg_stat_activity
+GROUP BY datname
+ORDER BY count(*) DESC;
+
+SELECT usename, count(*)
+FROM pg_stat_activity
+GROUP BY usename
+ORDER BY count(*) DESC;
+
+SHOW max_connections;
+
+SELECT 
+    count(*) AS current_connections,
+    setting::int AS max_connections,
+    round((count(*)::numeric / setting::int) * 100, 2) AS usage_percent
+FROM pg_stat_activity, pg_settings
+WHERE name = 'max_connections'
+GROUP BY setting;
+
+Include PromQL examples such as:
+- pg_stat_activity_count
+- sum(pg_stat_activity_count)
+- sum by (datname) (pg_stat_activity_count)
+- sum by (state) (pg_stat_activity_count)
+- max_over_time(pg_stat_activity_count[5m])
+- percentage of max_connections where possible
+
+Explain clearly that:
+- postgres_exporter is the primary source for PostgreSQL connection count metrics.
+- pg_stat_activity is the PostgreSQL source view behind connection visibility.
+- Prometheus stores the metric history.
+- Grafana visualizes current and historical connection usage.
+
+6. Monitoring goal: Connection Pool Exhaustion
+
+Create a full standalone README under:
+
+monitoring-goals/connection-pool-exhaustion/README.md
+
+This README should explain:
+- What connection pool exhaustion means
+- Why PgBouncer is important
+- How PgBouncer fits in the architecture
+- What happens when pools are exhausted
+- Difference between PostgreSQL max_connections exhaustion and PgBouncer pool exhaustion
+- Which pgbouncer_exporter metrics are useful
+- How to validate PgBouncer manually
+- How to check PgBouncer SHOW commands
+- How to validate metrics in Prometheus
+- How to visualize pool usage in Grafana
+- Suggested warning and critical thresholds
+- Example PromQL queries
+- Example alert rules
+- Troubleshooting steps
+
+Include PgBouncer commands such as:
+- SHOW POOLS;
+- SHOW CLIENTS;
+- SHOW SERVERS;
+- SHOW STATS;
+- SHOW CONFIG;
+- SHOW DATABASES;
+
+Include useful pool concepts:
+- active clients
+- waiting clients
+- active server connections
+- idle server connections
+- max_client_conn
+- default_pool_size
+- reserve_pool_size
+- pool_mode
+- client connections
+- server connections
+- database-level pool limits
+- user-level pool behavior
+
+Explain alert logic around:
+- clients waiting
+- high pool utilization
+- server connections near pool limit
+- max_client_conn nearing exhaustion
+- persistent waiting clients
+- no idle server connections during active traffic
+
+Include example PgBouncer validation commands:
+
+psql -h 127.0.0.1 -p 6432 -U <pgbouncer_admin_user> pgbouncer -c "SHOW POOLS;"
+psql -h 127.0.0.1 -p 6432 -U <pgbouncer_admin_user> pgbouncer -c "SHOW CLIENTS;"
+psql -h 127.0.0.1 -p 6432 -U <pgbouncer_admin_user> pgbouncer -c "SHOW SERVERS;"
+psql -h 127.0.0.1 -p 6432 -U <pgbouncer_admin_user> pgbouncer -c "SHOW CONFIG;"
+
+Explain clearly that:
+- pgbouncer_exporter is required for pool exhaustion visibility.
+- postgres_exporter alone cannot show full PgBouncer pool health.
+- PgBouncer pool exhaustion can occur even when PostgreSQL itself is still running.
+- Waiting clients are one of the strongest signs of pool pressure.
+
+7. Prometheus configuration
+
+Generate a prometheus.yml that scrapes:
+- postgres_exporter on PG17 host port 9187
+- pgbouncer_exporter on PG17 host port 9127
+
+Use placeholders:
+- <PG17_HOST_IP>
+- <OBSERVABILITY_SERVER_IP>
+- <POSTGRES_EXPORTER_PORT>
+- <PGBOUNCER_EXPORTER_PORT>
+
+Include scrape interval recommendations.
+
+Example scrape jobs should include:
+- job_name: postgres_exporter
+- job_name: pgbouncer_exporter
+
+Also include:
+- How to validate Prometheus targets
+- How to reload Prometheus configuration
+- How to troubleshoot DOWN targets
+- Firewall checks from the Observability Server to the PG17 Host
+
+8. Alert rules
+
+Generate Prometheus alert rule YAML files for:
+
+Database Connection Count:
+- HighDatabaseConnectionUsage
+- DatabaseConnectionsNearMax
+- TooManyIdleConnections
+- SuddenConnectionSpike
+
+Connection Pool Exhaustion:
+- PgBouncerClientsWaiting
+- PgBouncerPoolNearExhaustion
+- PgBouncerMaxClientConnNearLimit
+- PgBouncerNoIdleServers
+- PgBouncerExporterDown
+
+Each alert should include:
+- alert name
+- expr
+- for
+- labels
+- annotations
+- summary
+- description
+- severity
+- suggested team/action
+
+Use realistic but adjustable thresholds.
+
+Include both warning and critical examples where appropriate.
+
+9. Grafana dashboards
+
+Generate dashboard descriptions and JSON skeletons for:
+- PostgreSQL Connection Count
+- PgBouncer Pool Exhaustion
+
+Each dashboard should include:
+- Current value panels
+- Time-series panels
+- Top database panels
+- Top user panels where applicable
+- Pool usage panels
+- Waiting clients panels
+- Active versus idle connection panels
+- Alert status panels
+- Threshold guidance
+- Suggested drill-down queries
+
+For PostgreSQL Connection Count dashboard, include panels for:
+- Total active connections
+- Connections by state
+- Connections by database
+- Connections by user
+- Connection usage percentage
+- Idle connections
+- Active connections
+- Connection trend over time
+
+For PgBouncer Pool Exhaustion dashboard, include panels for:
+- Active clients
+- Waiting clients
+- Active server connections
+- Idle server connections
+- Pool utilization percentage
+- Max client connection usage
+- Pool usage by database
+- Pool usage by user
+- PgBouncer exporter health
+
+10. Microsoft Teams alerting
+
+Create documentation for configuring Microsoft Teams notifications from Grafana.
+
+Include:
+- Teams incoming webhook setup or workflow-based webhook setup
+- Grafana contact point
+- Notification policy
+- Test alert
+- Common Teams delivery problems
+- Message formatting guidance
+
+The Microsoft Teams guide should explain:
+- How to create or obtain the Teams webhook URL
+- Where to configure it in Grafana
+- How to send a test notification
+- How to route only PostgreSQL and PgBouncer alerts to the correct Teams channel
+
+11. Troubleshooting
+
+Include common troubleshooting sections for:
+- postgres_exporter not starting
+- PostgreSQL authentication failure
+- pg_hba.conf blocking exporter
+- Prometheus target down
+- Grafana datasource failing
+- PgBouncer admin database not reachable
+- pgbouncer_exporter not starting
+- pgbouncer_exporter metric names not matching
+- PgBouncer pool metrics missing
+- PgBouncer SHOW commands failing
+- Teams webhook not receiving alerts
+- Firewall blocking exporter ports
+- systemd service failures
+- Wrong listen_address or port binding
+- Exporter exposed only on localhost when Prometheus is remote
+- Incorrect PostgreSQL 17 config path
+
+12. Validation checklist
+
+Create a final checklist covering:
+- PostgreSQL running
+- Monitoring user created
+- Monitoring user can connect
+- postgres_exporter running
+- postgres_exporter metrics accessible
+- PgBouncer installed
+- PgBouncer configured
+- PgBouncer serving connections
+- PgBouncer admin database accessible
+- pgbouncer_exporter running
+- pgbouncer_exporter metrics accessible
+- Prometheus installed
+- Prometheus targets UP
+- Grafana installed
+- Grafana datasource connected
+- Dashboards imported
+- Alerts configured
+- Teams test alert received
+- Database Connection Count validated independently
+- Connection Pool Exhaustion validated independently
+
+13. Style requirements
+
+Use:
+- Clear markdown
+- Tables where useful
+- Commands in fenced code blocks
+- Step-by-step numbered procedures
+- Production-friendly explanations
+- Practical DBA/DevOps tone
+- Ubuntu 24.04 compatible commands
+- PostgreSQL 17 paths where applicable
+- Placeholder values clearly marked
+- No vague instructions like “configure accordingly”
+- Explain why each step matters
+
+14. Important accuracy requirements
+
+Be precise about:
+- Which signals come from postgres_exporter
+- Which signals come from pgbouncer_exporter
+- Which signals come from PostgreSQL system views
+- Which signals come from PgBouncer SHOW commands
+- Why connection count is not the same as pool exhaustion
+- Why PostgreSQL max_connections exhaustion is different from PgBouncer pool exhaustion
+- Why PgBouncer metrics are required for pool exhaustion
+- Why Prometheus pulls/scrapes instead of receiving pushes
+- Why Grafana should alert from Prometheus metrics
+
+Do not include failed database connection monitoring in this implementation.
+Do not include pgaudit in this implementation.
+Do not include Loki, Promtail, Grafana Alloy, mtail, or Vector in this implementation.
+
+Generate the full repository content as markdown and config files.

@@ -1,0 +1,101 @@
+groups:
+  - name: postgres_connection_count
+    interval: 30s
+    rules:
+
+      # ---------------------------------------------------------------
+      # HighDatabaseConnectionUsage
+      # Connection usage exceeds warning or critical thresholds relative
+      # to max_connections. Sustained high usage risks hitting the hard
+      # limit and causing new connections to fail.
+      # ---------------------------------------------------------------
+      - alert: HighDatabaseConnectionUsage
+        expr: |
+          (
+            sum(pg_stat_activity_count) by (instance)
+            /
+            pg_settings_max_connections
+          ) * 100 > 70
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+        annotations:
+          summary: "PostgreSQL connection usage above 70% on {{ $labels.instance }}"
+          description: >
+            PostgreSQL on {{ $labels.instance }} is using {{ $value | printf "%.1f" }}%
+            of max_connections. Sustained usage above 70% risks connection exhaustion.
+            Investigate idle connections, application connection pooling, or increase max_connections
+            if headroom is needed.
+
+      - alert: DatabaseConnectionsNearMax
+        expr: |
+          (
+            sum(pg_stat_activity_count) by (instance)
+            /
+            pg_settings_max_connections
+          ) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          team: dba
+          component: postgres
+        annotations:
+          summary: "PostgreSQL connections near max_connections on {{ $labels.instance }}"
+          description: >
+            PostgreSQL on {{ $labels.instance }} has {{ $value | printf "%.1f" }}% of
+            max_connections in use. New connection attempts will fail once 100% is reached.
+            Immediate action required: kill idle connections, check for connection leaks,
+            or temporarily increase max_connections (requires restart).
+
+      # ---------------------------------------------------------------
+      # TooManyIdleConnections
+      # Idle connections hold server resources (memory, autovacuum slots)
+      # without doing useful work. A large idle count relative to active
+      # connections suggests connection leaks or a pool that is too large.
+      # ---------------------------------------------------------------
+      - alert: TooManyIdleConnections
+        expr: |
+          sum(pg_stat_activity_count{state="idle"}) by (instance)
+          >
+          sum(pg_stat_activity_count{state="active"}) by (instance) * 3
+        for: 10m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+        annotations:
+          summary: "High idle connection ratio on {{ $labels.instance }}"
+          description: >
+            PostgreSQL on {{ $labels.instance }} has significantly more idle connections
+            than active ones (idle: {{ with query "sum(pg_stat_activity_count{state='idle'})" }}{{ . | first | value | printf "%.0f" }}{{ end }},
+            active: {{ with query "sum(pg_stat_activity_count{state='active'})" }}{{ . | first | value | printf "%.0f" }}{{ end }}).
+            This may indicate a connection leak or an oversized application connection pool.
+            Consider enabling `idle_in_transaction_session_timeout` and reviewing pool sizes.
+
+      # ---------------------------------------------------------------
+      # SuddenConnectionSpike
+      # A rapid increase in total connections within 5 minutes may
+      # indicate a connection storm, retry loop, or application restart
+      # flooding the database with connections.
+      # ---------------------------------------------------------------
+      - alert: SuddenConnectionSpike
+        expr: |
+          (
+            sum(pg_stat_activity_count) by (instance)
+            -
+            sum(pg_stat_activity_count) by (instance) offset 5m
+          ) > 30
+        for: 2m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+        annotations:
+          summary: "Sudden connection spike detected on {{ $labels.instance }}"
+          description: >
+            PostgreSQL on {{ $labels.instance }} gained more than 30 connections in the
+            last 5 minutes (delta: {{ $value | printf "%.0f" }}). This may be a connection
+            storm caused by an application restart, retry loop, or deployment. Monitor
+            whether connections stabilize or continue climbing.

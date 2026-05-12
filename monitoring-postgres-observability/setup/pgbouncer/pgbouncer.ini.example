@@ -1,0 +1,98 @@
+;; PgBouncer configuration example
+;; Copy to /etc/pgbouncer/pgbouncer.ini and adjust values
+
+[databases]
+;; Map application database names to PostgreSQL backend
+;; Format: <client_dbname> = host=<pg_host> port=<pg_port> dbname=<pg_dbname>
+mydb = host=127.0.0.1 port=5432 dbname=mydb
+
+;; Wildcard: pass all database names through to PostgreSQL unchanged
+;; * = host=127.0.0.1 port=5432
+
+[pgbouncer]
+;;-------------
+;; Generic settings
+;;-------------
+listen_addr = 127.0.0.1
+listen_port = 6432
+
+;; Authentication
+auth_type = md5
+auth_file = /etc/pgbouncer/userlist.txt
+
+;; Admin and stats users (required for pgbouncer_exporter and manual SHOW commands)
+admin_users = pgb_exporter
+stats_users = pgb_exporter
+
+;;-------------
+;; Pool settings
+;;-------------
+;; transaction: pool a server connection per transaction (recommended for most web apps)
+;; session: pool a server connection per client session
+;; statement: pool a server connection per statement (dangerous, requires autocommit)
+pool_mode = transaction
+
+;; Maximum number of client connections allowed (across all pools)
+;; Raise this for high-concurrency applications; watch with pgbouncer_config_max_client_conn
+max_client_conn = 200
+
+;; Number of server connections per pool (per database+user combination)
+;; Keep this well below PostgreSQL max_connections
+;; Reserve headroom for superuser/admin and replication connections
+default_pool_size = 20
+
+;; Reserve pool activated when default_pool_size is exhausted
+;; Provides a small buffer before clients start waiting
+reserve_pool_size = 5
+reserve_pool_timeout = 3
+
+;; Maximum server connections per database (0 = no limit beyond default_pool_size)
+max_db_connections = 0
+
+;; Maximum server connections per user (0 = no limit)
+max_user_connections = 0
+
+;;-------------
+;; Timeouts
+;;-------------
+;; Client-facing timeouts
+client_idle_timeout = 600
+client_login_timeout = 60
+
+;; Server-facing timeouts
+server_idle_timeout = 600
+server_connect_timeout = 15
+server_login_retry = 15
+
+;; How long to allow a client to wait for a server connection before returning an error
+query_wait_timeout = 120
+
+;;-------------
+;; Logging
+;;-------------
+log_connections = 0
+log_disconnections = 0
+log_pooler_errors = 1
+stats_period = 60
+
+;;-------------
+;; Networking
+;;-------------
+;; TCP keepalive settings
+tcp_keepalive = 1
+tcp_keepidle = 60
+tcp_keepintvl = 10
+tcp_keepcnt = 5
+
+;;-------------
+;; TLS (optional — configure for production)
+;;-------------
+;; client_tls_sslmode = prefer
+;; client_tls_key_file = /etc/pgbouncer/server.key
+;; client_tls_cert_file = /etc/pgbouncer/server.crt
+
+;;-------------
+;; Logging destinations
+;;-------------
+logfile = /var/log/pgbouncer/pgbouncer.log
+pidfile = /var/run/pgbouncer/pgbouncer.pid
