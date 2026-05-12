@@ -1,24 +1,13 @@
 global:
-  scrape_interval: 15s          # How often to scrape targets
-  evaluation_interval: 15s      # How often to evaluate alert rules
-  scrape_timeout: 10s           # Timeout for each scrape
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
 
-  # External labels are attached to all outgoing alert notifications
   external_labels:
     environment: production
-    cluster: pg17-observability
-
-# Alert rules are evaluated by Prometheus but managed in Grafana
-# If using standalone Alertmanager, configure alerting: block here
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets: ['localhost:9093']
-
-# Load alert rule files
-rule_files:
-  - "rules/postgres-connection-count.yml"
-  - "rules/pgbouncer-pool-exhaustion.yml"
+    cluster: pg18-observability
+    site: primary
+    service: postgresql
 
 scrape_configs:
 
@@ -28,34 +17,36 @@ scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          instance: observability-server
+          component: prometheus
 
   # ---------------------------------------------------------------
-  # postgres_exporter — PostgreSQL internal metrics
-  # Exposes: pg_stat_activity_count, pg_settings_max_connections,
-  #          pg_stat_bgwriter, pg_stat_database, and others
-  # Source host: PG17 Host
+  # PostgreSQL exporter — PostgreSQL internal metrics
   # ---------------------------------------------------------------
   - job_name: postgres_exporter
     scrape_interval: 15s
-    static_configs:
-      - targets: ['<PG17_HOST_IP>:<POSTGRES_EXPORTER_PORT>']
-        labels:
-          instance: pg17-primary
-          component: postgres
+    scrape_timeout: 10s
     metrics_path: /metrics
+    static_configs:
+      - targets: ['127.0.0.1:9187']
+        labels:
+          instance: pg18-primary
+          component: postgres
+          database_engine: postgresql
+          database_version: "18"
 
   # ---------------------------------------------------------------
-  # pgbouncer_exporter — PgBouncer pool metrics
-  # Exposes: pgbouncer_pools_cl_active, pgbouncer_pools_cl_waiting,
-  #          pgbouncer_pools_sv_active, pgbouncer_pools_sv_idle,
-  #          pgbouncer_config_max_client_conn, and others
-  # Source host: PG17 Host
+  # PgBouncer exporter — PgBouncer pool metrics
   # ---------------------------------------------------------------
   - job_name: pgbouncer_exporter
     scrape_interval: 15s
-    static_configs:
-      - targets: ['<PG17_HOST_IP>:<PGBOUNCER_EXPORTER_PORT>']
-        labels:
-          instance: pg17-primary
-          component: pgbouncer
+    scrape_timeout: 10s
     metrics_path: /metrics
+    static_configs:
+      - targets: ['127.0.0.1:9127']
+        labels:
+          instance: pg18-primary
+          component: pgbouncer
+          database_engine: postgresql
+          database_version: "18"

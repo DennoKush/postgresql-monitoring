@@ -25,7 +25,7 @@ GRANT pg_monitor TO monitoring_user;
 
 ### pg_hba.conf entry
 
-Add this line to `/etc/postgresql/17/main/pg_hba.conf` to allow the monitoring user to connect from localhost:
+Add this line to `/etc/postgresql/18/main/pg_hba.conf` to allow the monitoring user to connect from localhost:
 
 ```
 host    postgres        monitoring_user     127.0.0.1/32    scram-sha-256
@@ -89,7 +89,7 @@ sudo chown postgres_exporter:postgres_exporter /etc/postgres_exporter/.env
 The `DATA_SOURCE_NAME` format used by postgres_exporter:
 
 ```
-postgresql://monitoring_user:<password>@localhost:5432/postgres?sslmode=disable
+postgresql://monitoring_user:<password>@localhost:5433/postgres?sslmode=disable
 ```
 
 ---
@@ -144,7 +144,7 @@ sudo journalctl -u postgres_exporter -n 50 --no-pager
 **Symptom:** `pg_up 0` and `FATAL: no pg_hba.conf entry for host "127.0.0.1"`
 
 **Fix:**
-1. Open `/etc/postgresql/17/main/pg_hba.conf`.
+1. Open `/etc/postgresql/18/main/pg_hba.conf`.
 2. Confirm the entry uses `127.0.0.1/32` (not `::1/128`) if connecting over IPv4.
 3. Reload: `sudo systemctl reload postgresql`
 
@@ -154,11 +154,11 @@ sudo journalctl -u postgres_exporter -n 50 --no-pager
 
 **Fix:** Check the `--web.listen-address` flag in the service file. Change `127.0.0.1:9187` to `0.0.0.0:9187` if Prometheus is on a different host.
 
-### Incorrect PostgreSQL 17 config path
+### Incorrect PostgreSQL 18 config path
 
-The config directory for PostgreSQL 17 on Ubuntu 24.04 is:
+The config directory for PostgreSQL 18 on Ubuntu 24.04 is:
 ```
-/etc/postgresql/17/main/
+/etc/postgresql/18/main/
 ```
 Not `/etc/postgresql/` or `/var/lib/postgresql/`. Verify with:
 ```bash

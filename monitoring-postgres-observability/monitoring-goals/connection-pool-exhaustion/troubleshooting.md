@@ -148,14 +148,14 @@ If set too low, applications will receive errors before PgBouncer can clear the 
 
 **Fix:**
 ```bash
-# On PG17 Host — verify exporter is listening on 0.0.0.0
+# On PG18 Host — verify exporter is listening on 0.0.0.0
 ss -tlnp | grep 9127
 
-# On PG17 Host — allow Observability Server
+# On PG18 Host — allow Observability Server
 sudo ufw allow from <OBSERVABILITY_SERVER_IP> to any port 9127 proto tcp
 
 # From Observability Server — test
-nc -zv <PG17_HOST_IP> 9127
+nc -zv <PG18_HOST_IP> 9127
 ```
 
 ---

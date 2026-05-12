@@ -66,7 +66,7 @@ pgbouncer_config_default_pool_size 20
 Run from the **Observability Server**:
 
 ```bash
-curl -s http://<PG17_HOST_IP>:9127/metrics | grep pgbouncer_up
+curl -s http://<PG18_HOST_IP>:9127/metrics | grep pgbouncer_up
 ```
 
 Expected: `pgbouncer_up 1`

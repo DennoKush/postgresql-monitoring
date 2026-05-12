@@ -5,12 +5,11 @@ groups:
 
       # ---------------------------------------------------------------
       # PgBouncerClientsWaiting
-      # Any client waiting for a server connection is a direct signal of
-      # pool pressure. Waiting clients will experience query latency.
-      # Sustained waiting indicates the pool cannot keep up with demand.
+      # Any waiting client means at least one request could not get a
+      # server connection immediately.
       # ---------------------------------------------------------------
       - alert: PgBouncerClientsWaiting
-        expr: sum(pgbouncer_pools_cl_waiting) by (instance) > 0
+        expr: sum by (instance) (pgbouncer_pools_cl_waiting) > 0
         for: 1m
         labels:
           severity: warning
@@ -20,35 +19,40 @@ groups:
           summary: "PgBouncer clients waiting on {{ $labels.instance }}"
           description: >
             PgBouncer on {{ $labels.instance }} has {{ $value | printf "%.0f" }} client(s)
-            waiting for a server connection. This indicates pool pressure.
-            Check active vs pool size with SHOW POOLS on PgBouncer admin database.
-            Consider increasing default_pool_size or reserve_pool_size if this persists.
+            waiting for a server connection. This indicates pool pressure and may increase
+            application query latency. Check SHOW POOLS, active clients, waiting clients,
+            slow queries, PostgreSQL max_connections, and application connection behavior
+            before increasing pool sizes.
 
+      # ---------------------------------------------------------------
+      # PgBouncerClientsWaitingCritical
+      # Higher sustained waiting means application latency/timeouts are likely.
+      # ---------------------------------------------------------------
       - alert: PgBouncerClientsWaitingCritical
-        expr: sum(pgbouncer_pools_cl_waiting) by (instance) > 10
+        expr: sum by (instance) (pgbouncer_pools_cl_waiting) > 10
         for: 2m
         labels:
           severity: critical
           team: dba
           component: pgbouncer
         annotations:
-          summary: "Critical number of PgBouncer clients waiting on {{ $labels.instance }}"
+          summary: "Critical PgBouncer client wait queue on {{ $labels.instance }}"
           description: >
             PgBouncer on {{ $labels.instance }} has {{ $value | printf "%.0f" }} clients
-            waiting for a server connection for more than 2 minutes. Applications will be
-            experiencing significant latency or timeouts. Immediate action required.
+            waiting for a server connection for more than 2 minutes. Applications may be
+            experiencing significant latency or timeouts. Check pool saturation, slow queries,
+            PostgreSQL connection limits, and application connection spikes immediately.
 
       # ---------------------------------------------------------------
       # PgBouncerPoolNearExhaustion
-      # When active server connections approach default_pool_size,
-      # the next client request will have to wait. This fires before
-      # clients actually start waiting.
+      # Active server connections are approaching configured default_pool_size.
       # ---------------------------------------------------------------
       - alert: PgBouncerPoolNearExhaustion
         expr: |
           (
-            sum(pgbouncer_pools_sv_active) by (instance, database, user)
+            sum by (instance, database, user) (pgbouncer_pools_sv_active)
             /
+            on(instance) group_left
             pgbouncer_config_default_pool_size
           ) * 100 > 80
         for: 5m
@@ -61,19 +65,19 @@ groups:
           description: >
             The PgBouncer pool for database={{ $labels.database }}, user={{ $labels.user }}
             on {{ $labels.instance }} is at {{ $value | printf "%.1f" }}% utilization.
-            Active server connections are near default_pool_size. Clients will start waiting
-            if load increases. Consider increasing default_pool_size.
+            Active server connections are approaching default_pool_size. Review active clients,
+            waiting clients, slow queries, and PostgreSQL capacity before changing pool settings.
 
       # ---------------------------------------------------------------
       # PgBouncerMaxClientConnNearLimit
-      # When total client connections approach max_client_conn, new
-      # client connections will be rejected entirely by PgBouncer.
+      # Total client connections are approaching PgBouncer max_client_conn.
       # ---------------------------------------------------------------
       - alert: PgBouncerMaxClientConnNearLimit
         expr: |
           (
-            sum(pgbouncer_pools_cl_active + pgbouncer_pools_cl_waiting) by (instance)
+            sum by (instance) (pgbouncer_pools_cl_active + pgbouncer_pools_cl_waiting)
             /
+            on(instance)
             pgbouncer_config_max_client_conn
           ) * 100 > 85
         for: 5m
@@ -84,28 +88,27 @@ groups:
         annotations:
           summary: "PgBouncer total client connections near max_client_conn on {{ $labels.instance }}"
           description: >
-            PgBouncer on {{ $labels.instance }} has {{ $value | printf "%.1f" }}% of
-            max_client_conn in use. New application connections will be rejected if this
-            reaches 100%. Increase max_client_conn in pgbouncer.ini and reload PgBouncer.
+            PgBouncer on {{ $labels.instance }} is using {{ $value | printf "%.1f" }}%
+            of max_client_conn. New application connections may be rejected if this reaches
+            100%. Check application connection spikes, connection leaks, client lifecycle,
+            and PgBouncer max_client_conn.
 
       # ---------------------------------------------------------------
       # PgBouncerNoIdleServers
-      # When there are active clients but no idle server connections,
-      # the pool has no spare capacity. Any new active client will have
-      # to wait until a server connection is freed.
+      # Informational early signal only. This can be normal during traffic.
       # ---------------------------------------------------------------
       - alert: PgBouncerNoIdleServers
         expr: |
           (
-            sum(pgbouncer_pools_cl_active) by (instance, database, user) > 0
+            sum by (instance, database, user) (pgbouncer_pools_cl_active) > 0
           )
           and
           (
-            sum(pgbouncer_pools_sv_idle) by (instance, database, user) == 0
+            sum by (instance, database, user) (pgbouncer_pools_sv_idle) == 0
           )
-        for: 3m
+        for: 5m
         labels:
-          severity: warning
+          severity: info
           team: dba
           component: pgbouncer
         annotations:
@@ -113,24 +116,41 @@ groups:
           description: >
             PgBouncer has active clients for database={{ $labels.database }},
             user={{ $labels.user }} on {{ $labels.instance }}, but zero idle server
-            connections. The pool is fully saturated — new requests will wait.
-            This condition often precedes visible client waiting.
+            connections. This may be normal during active traffic, but it can indicate
+            limited spare pool capacity if it persists together with waiting clients.
 
       # ---------------------------------------------------------------
-      # PgBouncerExporterDown
-      # If the exporter is down, Prometheus loses all pool visibility.
-      # This fires when pgbouncer_up drops to 0 or the target goes dark.
+      # PgBouncerExporterTargetDown
+      # Prometheus cannot scrape the exporter target.
       # ---------------------------------------------------------------
-      - alert: PgBouncerExporterDown
-        expr: pgbouncer_up == 0 or absent(pgbouncer_up)
+      - alert: PgBouncerExporterTargetDown
+        expr: up{job="pgbouncer_exporter"} == 0
         for: 2m
         labels:
           severity: critical
           team: dba
           component: pgbouncer
         annotations:
-          summary: "pgbouncer_exporter is down on {{ $labels.instance }}"
+          summary: "pgbouncer_exporter target is down on {{ $labels.instance }}"
           description: >
-            The pgbouncer_exporter on {{ $labels.instance }} is not responding or has
-            lost connectivity to PgBouncer. All pool exhaustion alerts are blind while
-            the exporter is down. Check the pgbouncer-exporter service and PgBouncer status.
+            Prometheus cannot scrape pgbouncer_exporter on {{ $labels.instance }}.
+            Check the pgbouncer-exporter service, host firewall, port 9127, and Prometheus
+            target configuration.
+
+      # ---------------------------------------------------------------
+      # PgBouncerExporterCannotReachPgBouncer
+      # Exporter is up, but it cannot connect to PgBouncer.
+      # ---------------------------------------------------------------
+      - alert: PgBouncerExporterCannotReachPgBouncer
+        expr: pgbouncer_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: dba
+          component: pgbouncer
+        annotations:
+          summary: "pgbouncer_exporter cannot reach PgBouncer on {{ $labels.instance }}"
+          description: >
+            pgbouncer_exporter is reachable by Prometheus, but it cannot connect to PgBouncer
+            on {{ $labels.instance }}. Check PgBouncer service status, port 6432, exporter
+            DATA_SOURCE_NAME, PgBouncer auth_file, stats_users, and userlist.txt.

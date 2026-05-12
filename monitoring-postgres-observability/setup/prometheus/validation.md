@@ -86,16 +86,16 @@ Both should return `"status": "success"` with a numeric result.
 
 ---
 
-## 7. Firewall — From PG17 Host to Observability Server
+## 7. Firewall — From PG18 Host to Observability Server
 
 Confirm Prometheus can reach the exporters. From the Observability Server:
 
 ```bash
-nc -zv <PG17_HOST_IP> 9187
-nc -zv <PG17_HOST_IP> 9127
+nc -zv <PG18_HOST_IP> 9187
+nc -zv <PG18_HOST_IP> 9127
 ```
 
-Expected: `Connection to <PG17_HOST_IP> 9187 port [tcp/*] succeeded!`
+Expected: `Connection to <PG18_HOST_IP> 9187 port [tcp/*] succeeded!`
 
 ---
 

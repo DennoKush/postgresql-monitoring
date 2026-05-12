@@ -4,10 +4,10 @@
 
 | Port | Protocol | Service | Host | Direction | Notes |
 |---|---|---|---|---|---|
-| 5432 | TCP | PostgreSQL | PG17 Host | Internal only | postgres_exporter → PostgreSQL; PgBouncer → PostgreSQL |
-| 6432 | TCP | PgBouncer | PG17 Host | App → PG17 Host | Application connection pooler |
-| 9187 | TCP | postgres_exporter | PG17 Host | Observability Server → PG17 Host | Prometheus scrape endpoint |
-| 9127 | TCP | pgbouncer_exporter | PG17 Host | Observability Server → PG17 Host | Prometheus scrape endpoint |
+| 5433 | TCP | PostgreSQL | PG18 Host | Internal only | postgres_exporter → PostgreSQL; PgBouncer → PostgreSQL |
+| 6432 | TCP | PgBouncer | PG18 Host | App → PG18 Host | Application connection pooler |
+| 9187 | TCP | postgres_exporter | PG18 Host | Observability Server → PG18 Host | Prometheus scrape endpoint |
+| 9127 | TCP | pgbouncer_exporter | PG18 Host | Observability Server → PG18 Host | Prometheus scrape endpoint |
 | 9090 | TCP | Prometheus | Observability Server | Internal / admin | Web UI and query API |
 | 3000 | TCP | Grafana | Observability Server | Users / admin | Dashboard and alerting UI |
 
@@ -15,7 +15,7 @@
 
 ## Firewall Configuration
 
-### On the PG17 Host (UFW)
+### On the PG18 Host (UFW)
 
 Open exporter ports only to the Observability Server:
 
@@ -50,12 +50,12 @@ sudo ufw allow from <ADMIN_CIDR> to any port 3000 proto tcp comment "grafana das
 
 ```bash
 # Test TCP reachability
-nc -zv <PG17_HOST_IP> 9187
-nc -zv <PG17_HOST_IP> 9127
+nc -zv <PG18_HOST_IP> 9187
+nc -zv <PG18_HOST_IP> 9127
 
 # Test metric endpoints
-curl -s http://<PG17_HOST_IP>:9187/metrics | grep pg_up
-curl -s http://<PG17_HOST_IP>:9127/metrics | grep pgbouncer_up
+curl -s http://<PG18_HOST_IP>:9187/metrics | grep pg_up
+curl -s http://<PG18_HOST_IP>:9127/metrics | grep pgbouncer_up
 
 # Expected output for postgres_exporter
 # pg_up 1
@@ -64,7 +64,7 @@ curl -s http://<PG17_HOST_IP>:9127/metrics | grep pgbouncer_up
 # pgbouncer_up 1
 ```
 
-### From the PG17 Host (self-check)
+### From the PG18 Host (self-check)
 
 ```bash
 # Verify postgres_exporter is listening
@@ -85,7 +85,7 @@ curl -s http://localhost:9127/metrics | head -5
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | `Connection refused` on port 9187 | postgres_exporter not running | `sudo systemctl start postgres_exporter` |
-| `Connection timed out` on port 9187 | Firewall blocking | Check UFW rules on PG17 Host |
+| `Connection timed out` on port 9187 | Firewall blocking | Check UFW rules on PG18 Host |
 | Prometheus target shows DOWN | Exporter listening on 127.0.0.1 only | Change `--web.listen-address` to `0.0.0.0:9187` in service file |
 | `Connection refused` on port 9127 | pgbouncer_exporter not running | `sudo systemctl start pgbouncer-exporter` |
 | Grafana datasource error | Prometheus not reachable on 9090 | Verify Prometheus is running and datasource URL is `http://localhost:9090` |

@@ -3,7 +3,7 @@
 ## Data Flow
 
 ```
-PostgreSQL 17
+PostgreSQL 18
     │
     │  pg_stat_activity, pg_stat_bgwriter, pg_settings, etc.
     ▼
@@ -37,7 +37,7 @@ Prometheus TSDB  (same instance — separate job)
 
 ## Component Descriptions
 
-### PostgreSQL 17
+### PostgreSQL 18
 
 The database server. Exposes internal state through system views:
 

@@ -1,6 +1,6 @@
 # Prometheus Setup
 
-Prometheus scrapes metrics from both exporters on the PG17 Host and stores them as time-series data for Grafana to query.
+Prometheus scrapes metrics from both exporters on the PG18 Host and stores them as time-series data for Grafana to query.
 
 ---
 
@@ -144,17 +144,17 @@ curl -s http://localhost:9090/api/v1/targets | python3 -m json.tool | grep -A5 '
 
 **Step 2 — Verify network connectivity from Observability Server:**
 ```bash
-curl -s http://<PG17_HOST_IP>:9187/metrics | head -5
-curl -s http://<PG17_HOST_IP>:9127/metrics | head -5
+curl -s http://<PG18_HOST_IP>:9187/metrics | head -5
+curl -s http://<PG18_HOST_IP>:9127/metrics | head -5
 ```
 
-**Step 3 — Check firewall on PG17 Host:**
+**Step 3 — Check firewall on PG18 Host:**
 ```bash
 sudo ufw status verbose | grep -E "9187|9127"
 ```
 
 **Step 4 — Verify exporter listen address:**
-On the PG17 Host:
+On the PG18 Host:
 ```bash
 ss -tlnp | grep -E "9187|9127"
 # Should show 0.0.0.0 not 127.0.0.1 if Prometheus is remote

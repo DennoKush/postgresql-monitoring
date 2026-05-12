@@ -58,7 +58,7 @@ To suppress alerts during maintenance windows:
 
 1. Go to **Alerting → Silences**
 2. Click **Add Silence**
-3. Set matching labels: `instance = pg17-primary`
+3. Set matching labels: `instance = pg18-primary`
 4. Set a time range for the maintenance window
 5. Click **Submit**
 
