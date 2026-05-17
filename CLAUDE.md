@@ -34,7 +34,7 @@ monitoring-postgres-observability/
 
 The monitoring stack is split across two servers:
 
-- **PostgreSQL 18 host** (Ubuntu 24.04): runs `postgres_exporter` (port 9187) and `pgbouncer_exporter` (port 9127), both as systemd services.
+- **PostgreSQL host** (Ubuntu 24.04): runs `postgres_exporter` (port 9187) and `pgbouncer_exporter` (port 9127), both as systemd services. Applications connect through PgBouncer on port 6432, which pools connections to PostgreSQL on port 5432.
 - **Observability server** (Ubuntu 24.04): runs Prometheus, Grafana, alert rules, and Microsoft Teams notification integration.
 
 Prometheus scrapes both exporters by pulling metrics. Grafana reads Prometheus as its datasource and evaluates alert rules. Alert notifications are sent to Microsoft Teams via an incoming webhook.
@@ -47,7 +47,7 @@ Prometheus scrapes both exporters by pulling metrics. Grafana reads Prometheus a
 - Secrets must always use `.env` files — never hardcoded.
 - Prefer systemd-based services; Docker is allowed only where clearly justified.
 - Use least-privilege PostgreSQL users for all exporters.
-- Use IP/port placeholders: `<PG18_HOST_IP>`, `<OBSERVABILITY_SERVER_IP>`, `<POSTGRES_EXPORTER_PORT>`, `<PGBOUNCER_EXPORTER_PORT>`.
+- Use IP/port placeholders: `<PG_HOST_IP>`, `<OBSERVABILITY_SERVER_IP>`, `<POSTGRES_EXPORTER_PORT>`, `<PGBOUNCER_EXPORTER_PORT>`.
 
 ## Monitoring Goals
 
@@ -70,4 +70,4 @@ Each goal has its own folder under `monitoring-goals/` with independent README, 
 - Tables for ports, thresholds, and comparisons.
 - Include validation commands after every major setup step.
 - Include a troubleshooting section in each component README.
-- Ubuntu 24.04 compatible paths (e.g., `/etc/postgresql/18/main/` for PostgreSQL config).
+- Ubuntu 24.04 compatible paths (e.g., `/etc/postgresql/<version>/main/` for PostgreSQL config — substitute the actual installed major version).

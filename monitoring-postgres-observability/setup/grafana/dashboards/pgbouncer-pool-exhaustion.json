@@ -29,7 +29,7 @@
       "title": "Active Clients",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_cl_active)",
@@ -44,7 +44,7 @@
       "title": "Waiting Clients",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_cl_waiting)",
@@ -71,7 +71,7 @@
       "title": "Active Server Connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_sv_active)",
@@ -86,7 +86,7 @@
       "title": "Idle Server Connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_sv_idle)",
@@ -113,7 +113,7 @@
       "title": "Pool Utilization % (active/pool_size)",
       "type": "gauge",
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "(sum(pgbouncer_pools_sv_active) / pgbouncer_config_default_pool_size) * 100",
@@ -142,7 +142,7 @@
       "title": "Max Client Conn Usage %",
       "type": "gauge",
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "(sum(pgbouncer_pools_cl_active + pgbouncer_pools_cl_waiting) / pgbouncer_config_max_client_conn) * 100",
@@ -171,7 +171,7 @@
       "title": "Client Connections Over Time (Active vs Waiting)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_cl_active)",
@@ -199,7 +199,7 @@
       "title": "Server Connections Over Time (Active vs Idle)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pgbouncer_pools_sv_active)",
@@ -219,7 +219,7 @@
       "title": "Pool Usage by Database",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum by (database) (pgbouncer_pools_cl_active)",
@@ -240,7 +240,7 @@
       "title": "Pool Usage by User",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum by (user) (pgbouncer_pools_cl_active)",
@@ -261,7 +261,7 @@
       "title": "pgbouncer_exporter Health",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "pgbouncer_up",
