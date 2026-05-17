@@ -30,7 +30,7 @@
       "title": "Total Active Connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pg_stat_activity_count{state=\"active\"})",
@@ -61,7 +61,7 @@
       "title": "Total Idle Connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(pg_stat_activity_count{state=\"idle\"})",
@@ -88,7 +88,7 @@
       "title": "Connection Usage %",
       "type": "gauge",
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "(sum(pg_stat_activity_count) / pg_settings_max_connections) * 100",
@@ -118,7 +118,7 @@
       "title": "max_connections",
       "type": "stat",
       "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "pg_settings_max_connections",
@@ -133,7 +133,7 @@
       "title": "Connection Count Over Time — by State",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum by (state) (pg_stat_activity_count)",
@@ -150,7 +150,7 @@
       "title": "Connection Usage % Over Time",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "(sum(pg_stat_activity_count) / pg_settings_max_connections) * 100",
@@ -180,7 +180,7 @@
       "title": "Connections by Database",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sort_desc(sum by (datname) (pg_stat_activity_count))",
@@ -196,7 +196,7 @@
       "title": "Connections by User",
       "type": "table",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sort_desc(sum by (usename) (pg_stat_activity_count))",
@@ -212,7 +212,7 @@
       "title": "Peak Connection Count (5m window)",
       "type": "timeseries",
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "max_over_time(sum(pg_stat_activity_count)[5m:30s])",
