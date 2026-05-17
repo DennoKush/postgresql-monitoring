@@ -1,0 +1,100 @@
+# Loki configuration — Observability Server
+# Single-binary (monolithic) deployment for a two-server PostgreSQL monitoring stack.
+#
+# Place at: /etc/loki/loki-config.yml
+# Reload: sudo systemctl restart loki
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+  # Bind on all interfaces so Grafana Alloy (on the PostgreSQL host) can push logs.
+  # Lock this down to specific IPs at the firewall level — not at the Loki level.
+  http_listen_address: 0.0.0.0
+
+common:
+  path_prefix: /var/lib/loki
+  storage:
+    filesystem:
+      chunks_directory: /var/lib/loki/chunks
+      rules_directory:  /var/lib/loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+# ---------------------------------------------------------------------------
+# Schema
+# ---------------------------------------------------------------------------
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store:        tsdb
+      object_store: filesystem
+      schema:       v13
+      index:
+        prefix: index_
+        period: 24h
+
+# ---------------------------------------------------------------------------
+# Ingest limits
+# ---------------------------------------------------------------------------
+limits_config:
+  # Reject log lines with timestamps older than 7 days.
+  reject_old_samples:         true
+  reject_old_samples_max_age: 168h
+
+  # Ingest rate limits per tenant (single tenant here).
+  ingestion_rate_mb:        4
+  ingestion_burst_size_mb:  8
+
+  # Log retention — delete logs older than 7 days.
+  retention_period: 168h
+
+  # Maximum length of a single log line (bytes). PostgreSQL lines rarely exceed 4KB.
+  max_line_size: 16384
+
+# ---------------------------------------------------------------------------
+# Querier
+# ---------------------------------------------------------------------------
+querier:
+  max_concurrent: 4
+
+# ---------------------------------------------------------------------------
+# Query range
+# ---------------------------------------------------------------------------
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled:  true
+        max_size_mb: 64
+
+# ---------------------------------------------------------------------------
+# Compactor — manages chunk compaction and retention enforcement
+# ---------------------------------------------------------------------------
+compactor:
+  working_directory:            /var/lib/loki/compactor
+  compaction_interval:          10m
+  retention_enabled:            true
+  retention_delete_delay:       2h
+  retention_delete_worker_count: 150
+  delete_request_store:         filesystem
+
+# ---------------------------------------------------------------------------
+# Ruler — enables Loki-native alerting rules (used by Grafana alert rules)
+# Grafana evaluates alerts via its own engine; this section is for reference.
+# ---------------------------------------------------------------------------
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /var/lib/loki/rules
+  rule_path:       /var/lib/loki/rules-temp
+  enable_api:      true
+  ring:
+    kvstore:
+      store: inmemory

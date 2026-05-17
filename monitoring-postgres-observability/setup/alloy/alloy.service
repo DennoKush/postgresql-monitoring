@@ -1,0 +1,43 @@
+# /etc/systemd/system/alloy.service
+#
+# Drop this file at /etc/systemd/system/alloy.service
+# if the apt-installed unit does not point to /etc/alloy/config.alloy.
+#
+# After placing: sudo systemctl daemon-reload && sudo systemctl enable --now alloy
+
+[Unit]
+Description=Grafana Alloy — PostgreSQL log shipping agent
+Documentation=https://grafana.com/docs/alloy/latest/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=alloy
+Group=alloy
+
+ExecStart=/usr/bin/alloy run \
+  /etc/alloy/config.alloy \
+  --storage.path=/var/lib/alloy/data \
+  --server.http.listen-addr=127.0.0.1:12345
+
+ExecReload=/bin/kill -HUP $MAINPID
+
+Restart=on-failure
+RestartSec=5s
+
+# Limit log output from Alloy itself — not to be confused with PostgreSQL logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=alloy
+
+# Harden the service
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadOnlyPaths=/
+ReadWritePaths=/var/lib/alloy /tmp
+ReadOnlyPaths=/etc/alloy
+
+[Install]
+WantedBy=multi-user.target

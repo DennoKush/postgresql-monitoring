@@ -1,0 +1,75 @@
+# postgresql.conf — Logging settings for Failed Database Connections monitoring
+#
+# Apply these settings to /etc/postgresql/<version>/main/postgresql.conf
+# After editing, run: sudo systemctl reload postgresql
+# (logging_collector changes require a full restart, not just reload)
+#
+# -------------------------------------------------------------------------
+
+# Where to send log output.
+# 'stderr' feeds into logging_collector below.
+log_destination = 'stderr'
+
+# Enable the background log-collector process.
+# Required for log_directory and log_filename to take effect.
+logging_collector = on
+
+# Directory for log files, relative to the data directory.
+# Full path is typically: /var/lib/postgresql/<version>/main/log
+log_directory = 'log'
+
+# Log file name pattern. Rotate daily to keep files manageable.
+log_filename = 'postgresql-%Y-%m-%d.log'
+
+# Rotate after 1 day or 100 MB, whichever comes first.
+log_rotation_age  = 1d
+log_rotation_size = 100MB
+
+# Truncate (overwrite) rather than append on rotation.
+# Combined with log_filename = 'postgresql-%Y-%m-%d.log' this gives one file per day.
+log_truncate_on_rotation = on
+
+# -------------------------------------------------------------------------
+# Line prefix
+#
+# Each log line begins with this prefix. Keep it structured so LogQL
+# label extraction is straightforward.
+#
+# %t  — timestamp with milliseconds (UTC)
+# %p  — process ID
+# %l  — log line number within the session
+# %u  — user name (or [unknown] if not yet authenticated)
+# %d  — database name (or [unknown])
+# %a  — application name
+# %h  — client host IP address (use %r for IP:port)
+# -------------------------------------------------------------------------
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+
+# -------------------------------------------------------------------------
+# Severity thresholds
+# -------------------------------------------------------------------------
+
+# Minimum message severity to write to the log.
+# 'warning' captures FATAL, ERROR, and WARNING — enough for failed connections
+# without the noise of INFO/DEBUG. Set to 'error' for even less noise.
+log_min_messages = warning
+
+# Minimum severity for which the failing SQL statement is also logged.
+log_min_error_statement = error
+
+# -------------------------------------------------------------------------
+# Connection logging
+#
+# These are the critical settings for the Failed Database Connections goal.
+# -------------------------------------------------------------------------
+
+# Log every successful and failed connection attempt.
+log_connections = on
+
+# Log session disconnections (optional — adds volume but useful for debugging).
+log_disconnections = on
+
+# Do NOT perform reverse DNS on client IP addresses.
+# Prevents latency spikes on connection setup and keeps client= field as an IP,
+# which avoids high-cardinality labels in Loki.
+log_hostname = off

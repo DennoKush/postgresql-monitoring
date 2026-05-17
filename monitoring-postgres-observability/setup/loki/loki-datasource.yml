@@ -1,0 +1,23 @@
+# Grafana datasource provisioning — Loki
+#
+# Place at: /etc/grafana/provisioning/datasources/loki-datasource.yml
+# After placing: sudo systemctl reload grafana-server
+#
+# Replace <LOKI_URL> with the Loki HTTP address reachable from Grafana.
+# If Loki and Grafana run on the same host, use http://localhost:3100.
+
+apiVersion: 1
+
+datasources:
+  - name:      Loki
+    type:      loki
+    uid:       loki
+    access:    proxy
+    url:       http://<LOKI_URL>:3100
+    isDefault: false
+    version:   1
+    editable:  true
+
+    jsonData:
+      maxLines: 1000
+      timeout:  "60"

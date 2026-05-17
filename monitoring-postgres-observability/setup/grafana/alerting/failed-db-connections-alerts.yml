@@ -1,0 +1,290 @@
+# Grafana alert rules — Failed Database Connections
+#
+# These rules use Loki as the datasource (LogQL expressions).
+# Deploy via Grafana provisioning:
+#   /etc/grafana/provisioning/alerting/failed-db-connections-alerts.yml
+# Or import through Grafana UI: Alerting → Alert rules → Import.
+#
+# All alerts route to the Microsoft Teams contact point via the notification
+# policy configured in setup/teams/. Adjust thresholds to match your baseline.
+#
+# After deploying: sudo systemctl reload grafana-server
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Failed Database Connections
+    folder: PostgreSQL Monitoring
+    interval: 1m
+    rules:
+
+      # -----------------------------------------------------------------------
+      # FailedDatabaseConnectionsAboveBaseline
+      # Fires when the total FATAL connection error rate exceeds a baseline
+      # threshold that should normally be near zero in production.
+      # -----------------------------------------------------------------------
+      - uid: failed-db-conn-baseline
+        title: FailedDatabaseConnectionsAboveBaseline
+        condition: threshold
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+          goal: failed-database-connections
+        annotations:
+          summary: "Failed database connections above baseline on {{ $labels.host }}"
+          description: >
+            More than 10 FATAL connection errors in the last 5 minutes.
+            This may indicate a misconfigured application, a brute-force attempt,
+            or a deployment pointing at the wrong database credentials.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} |= "FATAL" [5m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:       threshold
+              refId:      threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [10]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+
+      # -----------------------------------------------------------------------
+      # FailedDatabaseAuthenticationSpike
+      # Fires on a sudden spike in password authentication failures.
+      # Could indicate credential stuffing, a broken deploy, or a misconfigured
+      # application restarting with wrong credentials.
+      # -----------------------------------------------------------------------
+      - uid: failed-db-auth-spike
+        title: FailedDatabaseAuthenticationSpike
+        condition: threshold
+        for: 2m
+        labels:
+          severity: critical
+          team: dba
+          component: postgres
+          goal: failed-database-connections
+        annotations:
+          summary: "Authentication failure spike on {{ $labels.host }}"
+          description: >
+            More than 5 password authentication failures in the last 2 minutes.
+            Investigate immediately — this could be a credential-stuffing attack
+            or a broken application deployment.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 120
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} |= "password authentication failed" [2m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:  threshold
+              refId: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+
+      # -----------------------------------------------------------------------
+      # RepeatedNoPgHbaEntryErrors
+      # Fires when pg_hba.conf is repeatedly rejecting connections.
+      # Usually indicates a new host, a new application, or a network change
+      # that has not been granted access in pg_hba.conf.
+      # -----------------------------------------------------------------------
+      - uid: no-pg-hba-entry
+        title: RepeatedNoPgHbaEntryErrors
+        condition: threshold
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+          goal: failed-database-connections
+        annotations:
+          summary: "pg_hba.conf rejecting connections on {{ $labels.host }}"
+          description: >
+            More than 3 'no pg_hba.conf entry' errors in the last 5 minutes.
+            A new client IP or application is attempting to connect but is not
+            listed in pg_hba.conf.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} |= "no pg_hba.conf entry" [5m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:  threshold
+              refId: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+
+      # -----------------------------------------------------------------------
+      # RepeatedUnknownRoleConnectionAttempts
+      # Fires when connections are failing because the role does not exist.
+      # Usually caused by a misconfigured application, a missing DB user
+      # after a migration, or a typo in credentials.
+      # -----------------------------------------------------------------------
+      - uid: unknown-role-attempts
+        title: RepeatedUnknownRoleConnectionAttempts
+        condition: threshold
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+          goal: failed-database-connections
+        annotations:
+          summary: "Unknown role connection attempts on {{ $labels.host }}"
+          description: >
+            More than 3 'role does not exist' errors in the last 5 minutes.
+            An application is connecting with a username that has no matching
+            PostgreSQL role. Check recent role changes or application config.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} |~ `role ".+" does not exist` [5m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:  threshold
+              refId: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+
+      # -----------------------------------------------------------------------
+      # RepeatedUnknownDatabaseConnectionAttempts
+      # Fires when connections are failing because the target database does not
+      # exist. Often caused by a misconfigured connection string or a database
+      # that was dropped but the application was not updated.
+      # -----------------------------------------------------------------------
+      - uid: unknown-database-attempts
+        title: RepeatedUnknownDatabaseConnectionAttempts
+        condition: threshold
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+          component: postgres
+          goal: failed-database-connections
+        annotations:
+          summary: "Unknown database connection attempts on {{ $labels.host }}"
+          description: >
+            More than 3 'database does not exist' errors in the last 5 minutes.
+            An application is connecting to a database name that does not exist.
+            Check connection strings and recent database renames or drops.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} |~ `database ".+" does not exist` [5m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:  threshold
+              refId: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [3]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+
+      # -----------------------------------------------------------------------
+      # LokiPostgresLogIngestionStopped
+      # Fires when no PostgreSQL log lines have arrived in Loki for 10 minutes.
+      # Could mean Alloy is down, the log file has rotated to an unexpected
+      # path, or a network interruption between the hosts.
+      # -----------------------------------------------------------------------
+      - uid: loki-pg-ingestion-stopped
+        title: LokiPostgresLogIngestionStopped
+        condition: threshold
+        for: 10m
+        labels:
+          severity: critical
+          team: dba
+          component: alloy
+          goal: failed-database-connections
+        annotations:
+          summary: "PostgreSQL log ingestion to Loki has stopped"
+          description: >
+            No PostgreSQL log lines have been received by Loki for the last
+            10 minutes. Grafana Alloy may be down, the log path may have changed,
+            or the network between the PostgreSQL host and Loki is broken.
+            Failed connection alerting is currently blind.
+          runbook_url: "http://<GRAFANA_URL>/d/failed-db-connections"
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: 'sum(count_over_time({job="postgres"} [10m]))'
+              queryType: instant
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type:  threshold
+              refId: threshold
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [1]
+                  operator:
+                    type: and
+                  query:
+                    params: [A]

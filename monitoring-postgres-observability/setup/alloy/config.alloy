@@ -1,0 +1,113 @@
+// Grafana Alloy configuration — PostgreSQL log shipping
+// Deployed on: PostgreSQL host
+// Purpose: tail PostgreSQL log files, filter to connection events, ship to Loki
+//
+// Replace all <PLACEHOLDER> values before deploying.
+// Reload after editing: sudo systemctl restart alloy
+
+// ---------------------------------------------------------------------------
+// 1. Discover log files
+//    Matches all daily log files in the PostgreSQL log directory.
+// ---------------------------------------------------------------------------
+local.file_match "postgres_logs" {
+  path_targets = [
+    {
+      __path__ = "<POSTGRES_LOG_PATH>/postgresql-*.log",
+      job      = "postgres",
+      host     = "<PG_HOST_IP>",
+    },
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// 2. Tail and forward to the processing pipeline
+// ---------------------------------------------------------------------------
+loki.source.file "postgres_log_reader" {
+  targets    = local.file_match.postgres_logs.targets
+  forward_to = [loki.process.postgres_pipeline.receiver]
+}
+
+// ---------------------------------------------------------------------------
+// 3. Process pipeline
+//    - Drop non-error lines to reduce Loki ingest volume
+//    - Extract severity as a low-cardinality label
+//    - Extract error_type as a low-cardinality label for alert routing
+// ---------------------------------------------------------------------------
+loki.process "postgres_pipeline" {
+
+  // Drop lines that are not connection-relevant errors.
+  // This drops INFO, LOG, DEBUG, and common noise before shipping.
+  stage.drop {
+    expression          = "^.*\\[(\\d+-\\d+)\\].*(?:LOG:|INFO:|DEBUG|autovacuum|checkpoint|statistics|duration:)"
+    drop_counter_reason = "non_connection_error"
+  }
+
+  // Extract severity level (FATAL, ERROR, WARNING, PANIC) from the log line.
+  stage.regex {
+    expression = `\s(?P<severity>FATAL|ERROR|WARNING|PANIC):`
+  }
+
+  // Promote severity as a label so dashboards and alerts can filter on it.
+  // Cardinality: 4 values maximum.
+  stage.labels {
+    values = {
+      severity = "severity",
+    }
+  }
+
+  // Classify the error type into a small set of low-cardinality labels.
+  // This avoids putting raw usernames or IPs into label values.
+  stage.regex {
+    expression = `(?P<error_type>password authentication failed|role ".+" does not exist|database ".+" does not exist|no pg_hba\.conf entry|SSL|certificate)`
+  }
+
+  // Normalise error_type into safe label values.
+  stage.replace {
+    expression   = `password authentication failed`
+    replace      = "auth_failed"
+    source       = "error_type"
+  }
+
+  stage.replace {
+    expression   = `role ".+" does not exist`
+    replace      = "unknown_role"
+    source       = "error_type"
+  }
+
+  stage.replace {
+    expression   = `database ".+" does not exist`
+    replace      = "unknown_database"
+    source       = "error_type"
+  }
+
+  stage.replace {
+    expression   = `no pg_hba\.conf entry`
+    replace      = "no_hba_entry"
+    source       = "error_type"
+  }
+
+  stage.replace {
+    expression   = `SSL|certificate`
+    replace      = "ssl_error"
+    source       = "error_type"
+  }
+
+  stage.labels {
+    values = {
+      error_type = "error_type",
+    }
+  }
+
+  forward_to = [loki.write.loki_server.receiver]
+}
+
+// ---------------------------------------------------------------------------
+// 4. Ship to Loki
+//    Replace <LOKI_URL> with the HTTP address of the Loki server, e.g.
+//    http://10.0.1.20:3100
+// ---------------------------------------------------------------------------
+loki.write "loki_server" {
+  endpoint {
+    url = "<LOKI_URL>/loki/api/v1/push"
+  }
+}
