@@ -105,7 +105,7 @@ The Teams webhook URL is a secret that grants the ability to post messages to a 
 The `postgres_exporter` connects from `localhost` (127.0.0.1) using password authentication:
 
 ```
-# /etc/postgresql/17/main/pg_hba.conf
+# /etc/postgresql/18/main/pg_hba.conf
 # Monitoring user — password auth from localhost only
 host    postgres        monitoring_user     127.0.0.1/32    scram-sha-256
 ```

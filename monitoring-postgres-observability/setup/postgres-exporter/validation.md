@@ -74,7 +74,7 @@ Expected: returns rows (at least one row for the current connection).
 Run from the **Observability Server**:
 
 ```bash
-curl -s http://<PG17_HOST_IP>:9187/metrics | grep pg_up
+curl -s http://<PG18_HOST_IP>:9187/metrics | grep pg_up
 ```
 
 Expected: `pg_up 1`

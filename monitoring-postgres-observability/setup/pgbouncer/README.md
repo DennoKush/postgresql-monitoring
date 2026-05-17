@@ -86,7 +86,7 @@ sudo systemctl start pgbouncer
 PgBouncer connects to PostgreSQL from `127.0.0.1`. Ensure PostgreSQL accepts connections from PgBouncer users:
 
 ```
-# /etc/postgresql/17/main/pg_hba.conf
+# /etc/postgresql/18/main/pg_hba.conf
 host    mydb        appuser         127.0.0.1/32    scram-sha-256
 host    pgbouncer   pgb_exporter    127.0.0.1/32    scram-sha-256
 ```

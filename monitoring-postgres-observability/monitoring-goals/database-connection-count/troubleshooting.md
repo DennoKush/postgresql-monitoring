@@ -53,7 +53,7 @@ sudo journalctl -u postgres_exporter -n 20 --no-pager | grep -i "fatal\|error\|a
 **Symptom:** `FATAL: no pg_hba.conf entry for host "127.0.0.1", user "monitoring_user"`
 
 **Fix:**
-1. Open `/etc/postgresql/17/main/pg_hba.conf`.
+1. Open `/etc/postgresql/18/main/pg_hba.conf`.
 2. Add (or verify) the line:
    ```
    host    postgres    monitoring_user    127.0.0.1/32    scram-sha-256
@@ -77,12 +77,12 @@ curl -s 'http://localhost:9090/api/v1/targets' | \
 
 **Step 2 — Verify network:**
 ```bash
-curl -s http://<PG17_HOST_IP>:9187/metrics | head -3
+curl -s http://<PG18_HOST_IP>:9187/metrics | head -3
 ```
 
 **Step 3 — Verify exporter listen address:**
 ```bash
-# On PG17 Host
+# On PG18 Host
 ss -tlnp | grep 9187
 ```
 If it shows `127.0.0.1:9187`, change to `0.0.0.0:9187` in the service file and restart.
@@ -130,13 +130,13 @@ curl -s http://localhost:9187/metrics | grep -c pg_stat_activity
 
 ---
 
-## Wrong PostgreSQL 17 Config Path
+## Wrong PostgreSQL 18 Config Path
 
-On Ubuntu 24.04, PostgreSQL 17 configuration is at:
+On Ubuntu 24.04, PostgreSQL 18 configuration is at:
 
 ```
-/etc/postgresql/17/main/postgresql.conf
-/etc/postgresql/17/main/pg_hba.conf
+/etc/postgresql/18/main/postgresql.conf
+/etc/postgresql/18/main/pg_hba.conf
 ```
 
 Not `/etc/postgresql/` or `/etc/postgresql/14/` (if you have multiple versions).

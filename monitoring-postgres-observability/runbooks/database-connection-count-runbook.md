@@ -112,7 +112,7 @@ WHERE state = 'idle in transaction'
 
 Only if the workload genuinely requires more connections and other options are exhausted:
 
-1. Edit `/etc/postgresql/17/main/postgresql.conf`
+1. Edit `/etc/postgresql/18/main/postgresql.conf`
 2. Increase `max_connections` (also consider increasing `shared_buffers` if memory allows)
 3. Plan a maintenance window for the restart
 

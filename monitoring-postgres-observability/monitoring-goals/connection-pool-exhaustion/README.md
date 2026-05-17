@@ -32,7 +32,7 @@ Application (hundreds of clients)
         │  maintains pool of 20 server connections
         │  (default_pool_size = 20)
         ▼
-  PostgreSQL 17
+  PostgreSQL 18
 ```
 
 PgBouncer pool exhaustion can occur **even when PostgreSQL has spare capacity**. If the pool is set to 20 but 20 long-running transactions are holding all connections, new clients wait — regardless of what `max_connections` is set to.

@@ -1,6 +1,6 @@
 # PostgreSQL Observability Stack — ProjectClearSight
 
-A production-ready monitoring implementation for PostgreSQL 17 and PgBouncer, covering two key observability goals:
+A production-ready monitoring implementation for PostgreSQL 18 and PgBouncer, covering two key observability goals:
 
 1. **Database Connection Count** — track active, idle, and waiting connections against `max_connections`.
 2. **Connection Pool Exhaustion** — detect PgBouncer pool pressure before application errors occur.
@@ -11,10 +11,10 @@ A production-ready monitoring implementation for PostgreSQL 17 and PgBouncer, co
 
 ```
 ┌──────────────────────────────────────┐        ┌──────────────────────────────────────┐
-│           PostgreSQL 17 Host          │        │         Observability Server          │
+│           PostgreSQL 18 Host          │        │         Observability Server          │
 │                                      │        │                                      │
 │  ┌─────────────────┐                 │        │  ┌────────────┐   ┌──────────────┐  │
-│  │   PostgreSQL 17  │◄───────────────┼────────┼──│ Prometheus │   │   Grafana    │  │
+│  │   PostgreSQL 18  │◄───────────────┼────────┼──│ Prometheus │   │   Grafana    │  │
 │  └────────┬────────┘                 │        │  └─────┬──────┘   └──────┬───────┘  │
 │           │                          │        │        │                  │          │
 │  ┌────────▼────────┐                 │        │        │scrapes           │queries   │
@@ -39,10 +39,10 @@ A production-ready monitoring implementation for PostgreSQL 17 and PgBouncer, co
 
 | Component | Role | Host |
 |---|---|---|
-| PostgreSQL 17 | Database server | PG17 Host |
-| PgBouncer | Connection pooler — sits between app and PostgreSQL | PG17 Host |
-| postgres_exporter | Exposes PostgreSQL internal metrics (pg_stat_activity, etc.) on :9187 | PG17 Host |
-| pgbouncer_exporter | Exposes PgBouncer pool metrics (SHOW POOLS, SHOW CLIENTS) on :9127 | PG17 Host |
+| PostgreSQL 18 | Database server | PG18 Host |
+| PgBouncer | Connection pooler — sits between app and PostgreSQL | PG18 Host |
+| postgres_exporter | Exposes PostgreSQL internal metrics (pg_stat_activity, etc.) on :9187 | PG18 Host |
+| pgbouncer_exporter | Exposes PgBouncer pool metrics (SHOW POOLS, SHOW CLIENTS) on :9127 | PG18 Host |
 | Prometheus | Scrapes exporters on a pull model; stores metrics as time-series | Observability Server |
 | Grafana | Visualizes Prometheus metrics; evaluates alert rules; routes notifications | Observability Server |
 | Microsoft Teams | Receives alert notifications from Grafana via incoming webhook | External |
@@ -71,7 +71,7 @@ See: [`monitoring-goals/connection-pool-exhaustion/README.md`](monitoring-goals/
 
 ## Recommended Deployment Order
 
-1. **PostgreSQL 17 Host**
+1. **PostgreSQL 18 Host**
    1. Create monitoring user in PostgreSQL (`pg_monitor` role)
    2. Install and configure PgBouncer
    3. Install and configure `postgres_exporter`
@@ -93,10 +93,10 @@ See: [`monitoring-goals/connection-pool-exhaustion/README.md`](monitoring-goals/
 
 | Port | Service | Direction | Notes |
 |---|---|---|---|
-| 5432 | PostgreSQL | PgBouncer → PostgreSQL | Local only |
+| 5433 | PostgreSQL | PgBouncer → PostgreSQL | Local only |
 | 6432 | PgBouncer | App → PgBouncer | Application-facing |
-| 9187 | postgres_exporter | Observability Server → PG17 Host | Prometheus scrape |
-| 9127 | pgbouncer_exporter | Observability Server → PG17 Host | Prometheus scrape |
+| 9187 | postgres_exporter | Observability Server → PG18 Host | Prometheus scrape |
+| 9127 | pgbouncer_exporter | Observability Server → PG18 Host | Prometheus scrape |
 | 9090 | Prometheus | Internal / admin | Web UI |
 | 3000 | Grafana | Admin / dashboard users | Web UI |
 
@@ -104,10 +104,10 @@ See: [`monitoring-goals/connection-pool-exhaustion/README.md`](monitoring-goals/
 
 ## Assumptions
 
-- PostgreSQL 17 is already installed and running on the PG17 host.
+- PostgreSQL 18 is already installed and running on the PG18 host.
 - Both servers run Ubuntu Server 24.04 LTS.
 - No monitoring tools are pre-installed on either server.
-- The Observability Server can reach ports 9187 and 9127 on the PG17 Host.
+- The Observability Server can reach ports 9187 and 9127 on the PG18 Host.
 - `systemd` is used for all service management.
 - Secrets are stored in `.env` files, not hardcoded in configuration.
 

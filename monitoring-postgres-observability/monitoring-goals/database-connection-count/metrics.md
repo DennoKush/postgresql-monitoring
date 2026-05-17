@@ -67,7 +67,7 @@ These are not raw exported metrics but are computed in PromQL queries and alert 
 
 ## Metric Availability
 
-These metrics are available as soon as `postgres_exporter` starts and `pg_up == 1`. No additional PostgreSQL extensions or configuration are needed — `pg_stat_activity` is always available in PostgreSQL 17.
+These metrics are available as soon as `postgres_exporter` starts and `pg_up == 1`. No additional PostgreSQL extensions or configuration are needed — `pg_stat_activity` is always available in PostgreSQL 18.
 
 To verify metric availability:
 

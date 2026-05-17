@@ -11,5 +11,5 @@
 ## Example for user "appuser" with password "secret":
 ##   echo -n "md5$(echo -n 'secretappuser' | md5sum | awk '{print $1}')"
 
-"appuser" "CHANGE_ME_OR_USE_MD5_HASH"
-"pgb_exporter" "CHANGE_ME_OR_USE_MD5_HASH"
+"appuser" "md593db1cd0b74e4f321877dddd562a4538"
+"pgb_exporter" "md5a50c21aa36266f61acad5617f7d1a335"

@@ -4,10 +4,10 @@
 [databases]
 ;; Map application database names to PostgreSQL backend
 ;; Format: <client_dbname> = host=<pg_host> port=<pg_port> dbname=<pg_dbname>
-mydb = host=127.0.0.1 port=5432 dbname=mydb
+mydb = host=127.0.0.1 port=5433 dbname=mydb
 
 ;; Wildcard: pass all database names through to PostgreSQL unchanged
-;; * = host=127.0.0.1 port=5432
+;; * = host=127.0.0.1 port=5433
 
 [pgbouncer]
 ;;-------------
